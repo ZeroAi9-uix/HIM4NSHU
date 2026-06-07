@@ -1,0 +1,298 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.generateJokeRoute = generateJokeRoute;
+exports.getTrendingJokes = getTrendingJokes;
+exports.getRandomJoke = getRandomJoke;
+exports.getDailyJoke = getDailyJoke;
+exports.toggleLike = toggleLike;
+exports.toggleDislike = toggleDislike;
+exports.toggleFavorite = toggleFavorite;
+exports.getComments = getComments;
+exports.addComment = addComment;
+exports.generateMemeCaption = generateMemeCaption;
+const Joke_1 = __importDefault(require("../models/Joke"));
+const Comment_1 = __importDefault(require("../models/Comment"));
+const User_1 = __importDefault(require("../models/User"));
+const gemini_1 = require("../config/gemini");
+async function generateJokeRoute(req, res) {
+    try {
+        const { category, roastTopic } = req.query;
+        const isRoast = category === 'roast';
+        const cleanCategory = ['dark', 'funny', 'lame', 'romance', 'roast'].includes(category)
+            ? category
+            : 'funny';
+        const jokeText = await (0, gemini_1.generateJoke)(cleanCategory, roastTopic);
+        // Save AI-generated joke to database so community features (likes, comments, favorites) work
+        const savedJoke = new Joke_1.default({
+            text: jokeText,
+            category: cleanCategory,
+            creator: 'AI',
+            isQuiz: false
+        });
+        await savedJoke.save();
+        // Reward XP for generating joke if authenticated
+        if (req.user?.id) {
+            await User_1.default.findByIdAndUpdate(req.user.id, { $inc: { xp: 10 } });
+        }
+        return res.json({
+            joke: savedJoke
+        });
+    }
+    catch (error) {
+        console.error('Joke generation route error:', error);
+        return res.status(500).json({ error: 'Failed to generate joke.' });
+    }
+}
+async function getTrendingJokes(req, res) {
+    try {
+        const jokes = await Joke_1.default.find({ isQuiz: false })
+            .sort({ likes: -1, createdAt: -1 })
+            .limit(10);
+        return res.json({ jokes });
+    }
+    catch (error) {
+        console.error('Trending jokes fetch error:', error);
+        return res.status(500).json({ error: 'Failed to fetch trending jokes.' });
+    }
+}
+async function getRandomJoke(req, res) {
+    try {
+        const count = await Joke_1.default.countDocuments({ isQuiz: false });
+        if (count === 0) {
+            // Create first joke
+            const jokeText = await (0, gemini_1.generateJoke)('funny');
+            const saved = await Joke_1.default.create({ text: jokeText, category: 'funny', creator: 'AI' });
+            return res.json({ joke: saved });
+        }
+        const randomIdx = Math.floor(Math.random() * count);
+        const joke = await Joke_1.default.findOne({ isQuiz: false }).skip(randomIdx);
+        return res.json({ joke });
+    }
+    catch (error) {
+        console.error('Random joke fetch error:', error);
+        return res.status(500).json({ error: 'Failed to fetch random joke.' });
+    }
+}
+async function getDailyJoke(req, res) {
+    try {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        // Check if daily joke exists for today
+        let dailyJoke = await Joke_1.default.findOne({
+            category: 'general',
+            createdAt: { $gte: startOfToday }
+        });
+        if (!dailyJoke) {
+            const jokeText = await (0, gemini_1.generateJoke)('funny');
+            dailyJoke = new Joke_1.default({
+                text: `[Daily Laugh] ${jokeText}`,
+                category: 'general',
+                creator: 'AI'
+            });
+            await dailyJoke.save();
+        }
+        return res.json({ joke: dailyJoke });
+    }
+    catch (error) {
+        console.error('Daily joke fetch error:', error);
+        return res.status(500).json({ error: 'Failed to fetch daily joke.' });
+    }
+}
+async function toggleLike(req, res) {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required to vote.' });
+        }
+        const joke = await Joke_1.default.findById(id);
+        if (!joke) {
+            return res.status(404).json({ error: 'Joke not found.' });
+        }
+        // Toggle upvote
+        const userObjId = userId;
+        const likedIdx = joke.likes.indexOf(userObjId);
+        const dislikedIdx = joke.dislikes.indexOf(userObjId);
+        if (likedIdx > -1) {
+            // Already liked, remove it
+            joke.likes.splice(likedIdx, 1);
+        }
+        else {
+            // Add like and remove dislike if exists
+            joke.likes.push(userObjId);
+            if (dislikedIdx > -1) {
+                joke.dislikes.splice(dislikedIdx, 1);
+            }
+            // Give XP to author if generated by user, or minor XP to voter
+            await User_1.default.findByIdAndUpdate(userId, { $inc: { xp: 5 } });
+        }
+        await joke.save();
+        return res.json({ joke });
+    }
+    catch (error) {
+        console.error('Like toggle error:', error);
+        return res.status(500).json({ error: 'Server error during like update.' });
+    }
+}
+async function toggleDislike(req, res) {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required to vote.' });
+        }
+        const joke = await Joke_1.default.findById(id);
+        if (!joke) {
+            return res.status(404).json({ error: 'Joke not found.' });
+        }
+        const userObjId = userId;
+        const likedIdx = joke.likes.indexOf(userObjId);
+        const dislikedIdx = joke.dislikes.indexOf(userObjId);
+        if (dislikedIdx > -1) {
+            joke.dislikes.splice(dislikedIdx, 1);
+        }
+        else {
+            joke.dislikes.push(userObjId);
+            if (likedIdx > -1) {
+                joke.likes.splice(likedIdx, 1);
+            }
+        }
+        await joke.save();
+        return res.json({ joke });
+    }
+    catch (error) {
+        console.error('Dislike toggle error:', error);
+        return res.status(500).json({ error: 'Server error during dislike update.' });
+    }
+}
+async function toggleFavorite(req, res) {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required.' });
+        }
+        const user = await User_1.default.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+        const jokeObjId = id;
+        const favIdx = user.favorites.indexOf(jokeObjId);
+        let isFavorite = false;
+        if (favIdx > -1) {
+            user.favorites.splice(favIdx, 1);
+        }
+        else {
+            user.favorites.push(jokeObjId);
+            isFavorite = true;
+            await User_1.default.findByIdAndUpdate(userId, { $inc: { xp: 15 } }); // Reward bookmarking
+        }
+        await user.save();
+        return res.json({ isFavorite, favorites: user.favorites });
+    }
+    catch (error) {
+        console.error('Favorite toggle error:', error);
+        return res.status(500).json({ error: 'Server error during favorite toggle.' });
+    }
+}
+async function getComments(req, res) {
+    try {
+        const { jokeId } = req.params;
+        const comments = await Comment_1.default.find({ jokeId }).sort({ createdAt: -1 });
+        return res.json({ comments });
+    }
+    catch (error) {
+        console.error('Comments fetch error:', error);
+        return res.status(500).json({ error: 'Failed to fetch comments.' });
+    }
+}
+async function addComment(req, res) {
+    try {
+        const { jokeId } = req.params;
+        const { text } = req.body;
+        const userId = req.user?.id;
+        const username = req.user?.username;
+        if (!userId || !username) {
+            return res.status(401).json({ error: 'Authentication required to comment.' });
+        }
+        if (!text || text.trim() === '') {
+            return res.status(400).json({ error: 'Comment text cannot be empty.' });
+        }
+        const comment = new Comment_1.default({
+            jokeId,
+            userId,
+            username,
+            text
+        });
+        await comment.save();
+        // Increment comment count in Joke
+        await Joke_1.default.findByIdAndUpdate(jokeId, { $inc: { commentsCount: 1 } });
+        // Give XP to commenter
+        await User_1.default.findByIdAndUpdate(userId, { $inc: { xp: 8 } });
+        return res.status(201).json({ comment });
+    }
+    catch (error) {
+        console.error('Add comment error:', error);
+        return res.status(500).json({ error: 'Failed to post comment.' });
+    }
+}
+async function generateMemeCaption(req, res) {
+    try {
+        const { template } = req.query;
+        const templateName = template || 'Drake Hotline Bling';
+        let captions = {
+            topText: "Writing jokes manually",
+            bottomText: "Using RAJ AI to generate infinite laughs"
+        };
+        // Check if we have gemini initialized
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (apiKey) {
+            try {
+                const { GoogleGenerativeAI } = require('@google/generative-ai');
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+                const prompt = `Generate a funny, high-IQ meme caption in two parts (top text and bottom text) for the meme template: "${templateName}". 
+        Respond ONLY with a JSON object in this exact format:
+        {"topText": "Top caption here", "bottomText": "Bottom caption here"}
+        Do not add markdown formatting or code blocks. Keep it extremely humorous and relevant to developers, technology, or AI.`;
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const cleanText = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+                captions = JSON.parse(cleanText);
+            }
+            catch (err) {
+                console.error('Gemini meme generation failed, using fallback:', err);
+            }
+        }
+        else {
+            const mockCaptions = {
+                'Drake Hotline Bling': [
+                    { topText: 'Studying coding algorithms all night', bottomText: 'Using RAJ AI to generate punchlines' },
+                    { topText: 'Awkward silence at a party', bottomText: 'Exclusively cracking dark AI jokes' }
+                ],
+                'Distracted Boyfriend': [
+                    { topText: 'Your current tasks', bottomText: 'Playing RAJ AI punchline quiz' }
+                ],
+                'Two Buttons': [
+                    { topText: 'Debug legacy production code', bottomText: 'Browse dark humor on RAJ AI' }
+                ],
+                'Change My Mind': [
+                    { topText: 'RAJ AI has the best pick-up lines.', bottomText: 'Change my mind.' }
+                ],
+                'Expanding Brain': [
+                    { topText: 'Telling dad jokes', bottomText: 'Generating dark AI comedy' }
+                ]
+            };
+            const list = mockCaptions[templateName] || mockCaptions['Drake Hotline Bling'];
+            captions = list[Math.floor(Math.random() * list.length)];
+        }
+        return res.json({ captions });
+    }
+    catch (error) {
+        console.error('Meme caption generation error:', error);
+        return res.status(500).json({ error: 'Failed to generate meme caption.' });
+    }
+}

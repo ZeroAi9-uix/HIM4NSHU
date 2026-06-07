@@ -1,0 +1,219 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: #030307;
+  --foreground: #f1f1f7;
+  --card-bg: rgba(10, 11, 23, 0.45);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --neon-cyan: #00f3ff;
+  --neon-pink: #ff007f;
+  --neon-purple: #a824ff;
+  --neon-green: #39ff14;
+  --neon-cyan-glow: rgba(0, 243, 255, 0.25);
+  --neon-pink-glow: rgba(255, 0, 127, 0.25);
+  --neon-purple-glow: rgba(168, 36, 255, 0.25);
+  --font-orbitron: 'Orbitron', sans-serif;
+  --font-syne: 'Syne', sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-pink: var(--neon-pink);
+  --color-neon-purple: var(--neon-purple);
+  --color-neon-green: var(--neon-green);
+  --font-orbitron: var(--font-orbitron);
+  --font-syne: var(--font-syne);
+  --font-outfit: var(--font-outfit);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  cursor: default;
+}
+
+/* Enable custom cursor actions */
+a, button, input, textarea, select, [role="button"] {
+  cursor: pointer;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-outfit);
+  overflow-x: hidden;
+  min-height: 100vh;
+  position: relative;
+  background-image: 
+    radial-gradient(ellipse at 50% -20%, rgba(168, 36, 255, 0.15), transparent 60%),
+    radial-gradient(ellipse at 80% 60%, rgba(0, 243, 255, 0.08), transparent 50%),
+    radial-gradient(circle at 10% 40%, rgba(255, 0, 127, 0.05), transparent 40%);
+}
+
+/* 🌌 CYBER GRID EFFECT */
+.cyber-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 🧊 PREMIUM GLASSMORPHISM */
+.glass-panel {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+}
+
+.glass-panel-cyan {
+  background: rgba(0, 243, 255, 0.03);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(0, 243, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 243, 255, 0.05);
+}
+
+.glass-panel-pink {
+  background: rgba(255, 0, 127, 0.03);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 0, 127, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(255, 0, 127, 0.05);
+}
+
+.glass-panel-purple {
+  background: rgba(168, 36, 255, 0.03);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(168, 36, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(168, 36, 255, 0.05);
+}
+
+/* ✨ GLOW EFFECTS */
+.glow-text-cyan {
+  text-shadow: 0 0 10px var(--neon-cyan-glow), 0 0 20px var(--neon-cyan-glow);
+}
+
+.glow-text-pink {
+  text-shadow: 0 0 10px var(--neon-pink-glow), 0 0 20px var(--neon-pink-glow);
+}
+
+.glow-text-purple {
+  text-shadow: 0 0 10px var(--neon-purple-glow), 0 0 20px var(--neon-purple-glow);
+}
+
+.glow-shadow-cyan:hover {
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.35);
+  border-color: var(--neon-cyan);
+}
+
+.glow-shadow-pink:hover {
+  box-shadow: 0 0 20px rgba(255, 0, 127, 0.35);
+  border-color: var(--neon-pink);
+}
+
+.glow-shadow-purple:hover {
+  box-shadow: 0 0 20px rgba(168, 36, 255, 0.35);
+  border-color: var(--neon-purple);
+}
+
+/* ✨ GRADIENT TEXT — used in hero section */
+.gradient-text {
+  background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 🔤 FONT UTILITY CLASSES — Explicit declarations for Tailwind v4 */
+.font-orbitron {
+  font-family: 'Orbitron', sans-serif;
+}
+
+.font-syne {
+  font-family: 'Syne', sans-serif;
+}
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(6, 6, 12, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 10px var(--neon-purple-glow);
+}
+
+/* Animations */
+@keyframes border-glow {
+  0%, 100% { border-color: var(--card-border); }
+  50% { border-color: var(--neon-purple); }
+}
+
+.animate-border-glow {
+  animation: border-glow 4s infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s infinite ease-in-out;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ─── SELECTION COLOR ─────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(168, 36, 255, 0.3);
+  color: #fff;
+}
+
+/* ─── FOCUS VISIBLE (Accessibility) ──────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--neon-purple);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
