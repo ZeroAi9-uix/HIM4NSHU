@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
 
   // Environment variables available to the browser
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://him4nshu.onrender.com',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://him4nshu.onrender.com','https://backend-hnra.onrender.com',
   }
 
 };
